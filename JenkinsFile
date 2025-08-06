@@ -1,0 +1,57 @@
+pipeline {
+  agent any
+
+  tools {
+    nodejs 'NodeJS_22'
+  }
+
+  environment {
+    BUILD_DIR = 'dist/mi-app'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git url: 'https://github.com/AndrePxd/BancoBM.git', branch: 'main'
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm install'
+      }
+    }
+
+    stage('Lint') {
+      steps {
+        sh 'npm run lint'
+      }
+    }
+
+    stage('Unit Tests') {
+      steps {
+        sh 'npm test -- --watch=false --browsers=ChromeHeadless'
+      }
+      post {
+        always { junit '**/coverage/*.xml' }
+      }
+    }
+
+    stage('Build Production') {
+      steps {
+        sh 'npm run build -- --prod'
+      }
+    }
+
+    stage('Archive Artifacts') {
+      steps {
+        archiveArtifacts artifacts: "${BUILD_DIR}/**/*", fingerprint: true
+      }
+    }
+  }
+
+  post {
+    success { echo 'Pipeline Angular OK' }
+    failure { echo 'Pipeline Angular FALLÓ' }
+  }
+}
